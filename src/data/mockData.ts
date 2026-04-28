@@ -1,0 +1,153 @@
+import type { AppData, RegisterForm, User } from '../types'
+
+export const roleLabels = {
+  admin: 'Admin',
+  organizer: 'Penyelenggara',
+  customer: 'Pelanggan',
+} as const
+
+export const emptyRegisterForm: RegisterForm = {
+  name: '',
+  email: '',
+  phone: '',
+  username: '',
+  password: '',
+  confirmPassword: '',
+  agree: false,
+}
+
+export const initialUsers: User[] = [
+  {
+    id: 1,
+    role: 'admin',
+    name: 'Admin TikTakTuk',
+    email: 'admin@gmail.com',
+    phone: '081200000001',
+    username: 'admin',
+    password: 'admin123',
+  },
+  {
+    id: 2,
+    role: 'organizer',
+    name: 'Nusantara Organizer',
+    email: 'organizer@gmail.com',
+    phone: '081200000002',
+    username: 'organizer',
+    password: 'organizer123',
+    contactEmail: 'kontak@nusantara.id',
+  },
+  {
+    id: 3,
+    role: 'customer',
+    name: 'Ratna Kirana',
+    email: 'customer@gmail.com',
+    phone: '081200000003',
+    username: 'customer',
+    password: 'customer123',
+  },
+]
+
+export const initialData: AppData = {
+  venues: [
+    {
+      id: 1,
+      name: 'Aula Merdeka',
+      city: 'Jakarta',
+      address: 'Jl. Sudirman No. 17',
+      capacity: 850,
+      seatingType: 'Nomor kursi',
+    },
+    {
+      id: 2,
+      name: 'Teater Aruna',
+      city: 'Bandung',
+      address: 'Jl. Braga No. 22',
+      capacity: 520,
+      seatingType: 'Campuran',
+    },
+    {
+      id: 3,
+      name: 'Lapangan Senja',
+      city: 'Yogyakarta',
+      address: 'Jl. Malioboro No. 8',
+      capacity: 1800,
+      seatingType: 'Festival',
+    },
+  ],
+  artists: [
+    { id: 1, name: 'Maliq Stage', genre: 'Pop', country: 'Indonesia' },
+    { id: 2, name: 'Ruang Rindu', genre: 'Indie', country: 'Indonesia' },
+    { id: 3, name: 'Larasati Quartet', genre: 'Jazz', country: 'Indonesia' },
+  ],
+  events: [
+    {
+      id: 1,
+      organizerId: 2,
+      title: 'Malam Akustik Kota',
+      artist: 'Ruang Rindu',
+      venue: 'Aula Merdeka',
+      date: '12 Mei 2026',
+      price: 175000,
+      quota: 320,
+    },
+    {
+      id: 2,
+      organizerId: 2,
+      title: 'Panggung Senja',
+      artist: 'Maliq Stage',
+      venue: 'Lapangan Senja',
+      date: '24 Mei 2026',
+      price: 220000,
+      quota: 900,
+    },
+    {
+      id: 3,
+      organizerId: 2,
+      title: 'Jazz di Teater',
+      artist: 'Larasati Quartet',
+      venue: 'Teater Aruna',
+      date: '2 Juni 2026',
+      price: 260000,
+      quota: 180,
+    },
+  ],
+  seats: [
+    { id: 1, venue: 'Aula Merdeka', code: 'A-01', section: 'A', status: 'Tersedia' },
+    { id: 2, venue: 'Aula Merdeka', code: 'A-02', section: 'A', status: 'Terisi' },
+    { id: 3, venue: 'Teater Aruna', code: 'B-14', section: 'B', status: 'Tersedia' },
+  ],
+  ticketCategories: [
+    { id: 1, event: 'Malam Akustik Kota', name: 'Regular', price: 175000, quota: 220 },
+    { id: 2, event: 'Panggung Senja', name: 'Festival', price: 220000, quota: 700 },
+    { id: 3, event: 'Jazz di Teater', name: 'VIP', price: 420000, quota: 80 },
+  ],
+  tickets: [
+    { id: 1, code: 'TKT-001', event: 'Malam Akustik Kota', customer: 'Ratna Kirana', status: 'Aktif' },
+    { id: 2, code: 'TKT-002', event: 'Panggung Senja', customer: 'Dimas Aditya', status: 'Dipakai' },
+    { id: 3, code: 'TKT-003', event: 'Jazz di Teater', customer: 'Ratna Kirana', status: 'Aktif' },
+  ],
+  orders: [
+    {
+      id: 1,
+      code: 'ORD-001',
+      customer: 'Ratna Kirana',
+      event: 'Malam Akustik Kota',
+      quantity: 2,
+      total: 350000,
+      status: 'Dibayar',
+    },
+    {
+      id: 2,
+      code: 'ORD-002',
+      customer: 'Dimas Aditya',
+      event: 'Panggung Senja',
+      quantity: 1,
+      total: 220000,
+      status: 'Menunggu',
+    },
+  ],
+  promotions: [
+    { id: 1, code: 'HEMAT20', title: 'Diskon Pelanggan Baru', discountType: 'Persentase', value: '20%' },
+    { id: 2, code: 'AKHIRPEKAN', title: 'Potongan Akhir Pekan', discountType: 'Nominal', value: 'Rp50.000' },
+  ],
+}
