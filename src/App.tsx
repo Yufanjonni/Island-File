@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { TopNav } from './components/TopNav'
 import { emptyRegisterForm, initialData, initialUsers } from './data/mockData'
@@ -15,6 +15,14 @@ const emptyPasswordForm: PasswordForm = {
   currentPassword: '',
   nextPassword: '',
   confirmPassword: '',
+}
+
+function getProfileForm(user: User): ProfileForm {
+  return {
+    name: user.name,
+    phone: user.phone,
+    contactEmail: user.contactEmail ?? user.email,
+  }
 }
 
 function App() {
@@ -37,16 +45,10 @@ function App() {
     [activeUserId, users],
   )
 
-  useEffect(() => {
-    if (!activeUser) return
-    setProfileForm({
-      name: activeUser.name,
-      phone: activeUser.phone,
-      contactEmail: activeUser.contactEmail ?? activeUser.email,
-    })
-  }, [activeUser])
-
   function navigate(nextPage: Page) {
+    if (nextPage === 'profile' && activeUser) {
+      setProfileForm(getProfileForm(activeUser))
+    }
     setPage(nextPage)
     setToast(null)
   }
@@ -76,6 +78,7 @@ function App() {
     }
 
     setActiveUserId(foundUser.id)
+    setProfileForm(getProfileForm(foundUser))
     setLoginForm({ username: '', password: '' })
     setPage('dashboard')
     setToast(null)
