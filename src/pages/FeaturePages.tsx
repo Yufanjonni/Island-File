@@ -16,6 +16,7 @@ import type {
   Venue,
 } from '../types'
 import { formatCurrency } from '../utils/format'
+import { getSeatCode } from '../utils/resourceDrafts'
 
 type ResourceKind = keyof AppData
 
@@ -49,7 +50,8 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
     return (
       <VenuePage
         venues={data.venues}
-        canManage={user.role !== 'customer'}
+        canCreate={user.role !== 'customer'}
+        canEdit={user.role !== 'customer'}
         onAdd={() => onAdd('venues')}
         onUpdate={(id) => onUpdate('venues', id)}
         onDelete={(id) => onDelete('venues', id)}
@@ -63,7 +65,8 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         title="Artis"
         data={[...data.artists].sort((a, b) => a.name.localeCompare(b.name))}
         columns={artistColumns}
-        canManage={user.role === 'admin'}
+        canCreate={user.role === 'admin'}
+        canEdit={user.role === 'admin'}
         onAdd={() => onAdd('artists')}
         onUpdate={(item) => onUpdate('artists', item.id)}
         onDelete={(item) => onDelete('artists', item.id)}
@@ -77,11 +80,13 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         title="Manajemen Kursi"
         data={data.seats}
         columns={seatColumns}
-        canManage={user.role !== 'customer'}
+        canCreate={user.role !== 'customer'}
+        canEdit={user.role !== 'customer'}
         onAdd={() => onAdd('seats')}
         onUpdate={(item) => onUpdate('seats', item.id)}
         onDelete={(item) => onDelete('seats', item.id)}
         stats={[
+          { label: 'Total', value: String(data.seats.length) },
           { label: 'Tersedia', value: String(data.seats.filter((seat) => seat.status === 'Tersedia').length) },
           { label: 'Terisi', value: String(data.seats.filter((seat) => seat.status === 'Terisi').length) },
         ]}
@@ -95,7 +100,8 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         title="Kategori Tiket"
         data={data.ticketCategories}
         columns={ticketCategoryColumns}
-        canManage={user.role !== 'customer'}
+        canCreate={user.role !== 'customer'}
+        canEdit={user.role !== 'customer'}
         onAdd={() => onAdd('ticketCategories')}
         onUpdate={(item) => onUpdate('ticketCategories', item.id)}
         onDelete={(item) => onDelete('ticketCategories', item.id)}
@@ -110,7 +116,8 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         title={page === 'myTickets' ? 'Tiket Saya' : page === 'ticketAssets' ? 'Tiket (Aset)' : 'Manajemen Tiket'}
         data={tickets}
         columns={ticketColumns}
-        canManage={user.role !== 'customer'}
+        canCreate={user.role !== 'customer'}
+        canEdit={user.role === 'admin'}
         onAdd={() => onAdd('tickets')}
         onUpdate={(item) => onUpdate('tickets', item.id)}
         onDelete={(item) => onDelete('tickets', item.id)}
@@ -125,24 +132,26 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         title={page === 'myOrders' ? 'Pesanan' : page === 'orderAssets' ? 'Order (Aset)' : 'Semua Order'}
         data={orders}
         columns={orderColumns}
-        canManage={user.role === 'admin'}
+        canCreate={false}
+        canEdit={user.role === 'admin'}
         onAdd={() => onAdd('orders')}
         onUpdate={(item) => onUpdate('orders', item.id)}
         onDelete={(item) => onDelete('orders', item.id)}
         stats={[
           { label: 'Total Order', value: String(orders.length) },
+          { label: 'Pending', value: String(orders.filter((order) => order.status === 'Menunggu').length) },
           { label: 'Dibayar', value: String(orders.filter((order) => order.status === 'Dibayar').length) },
+          { label: 'Revenue', value: formatCurrency(orders.reduce((total, order) => total + order.total, 0)) },
         ]}
       />
     )
   }
 
   return (
-    <TablePage
-      title="Promosi"
-      data={data.promotions}
-      columns={promotionColumns}
-      canManage={user.role === 'admin'}
+    <PromotionPage
+      promotions={data.promotions}
+      canCreate={user.role === 'admin'}
+      canEdit={user.role === 'admin'}
       onAdd={() => onAdd('promotions')}
       onUpdate={(item) => onUpdate('promotions', item.id)}
       onDelete={(item) => onDelete('promotions', item.id)}
@@ -164,15 +173,18 @@ type EventCatalogProps = {
 function EventCatalog({ events, role, title, canManage, onAdd, onUpdate, onDelete, onCheckout }: EventCatalogProps) {
   const [query, setQuery] = useState('')
   const [venue, setVenue] = useState('Semua venue')
+  const [artist, setArtist] = useState('Semua artis')
   const venues = Array.from(new Set(events.map((event) => event.venue)))
+  const artists = Array.from(new Set(events.map((event) => event.artist)))
   const filteredEvents = useMemo(
     () =>
       events.filter((event) => {
         const matchesQuery = `${event.title} ${event.artist}`.toLowerCase().includes(query.toLowerCase())
         const matchesVenue = venue === 'Semua venue' || event.venue === venue
-        return matchesQuery && matchesVenue
+        const matchesArtist = artist === 'Semua artis' || event.artist === artist
+        return matchesQuery && matchesVenue && matchesArtist
       }),
-    [events, query, venue],
+    [artist, events, query, venue],
   )
 
   return (
@@ -195,6 +207,12 @@ function EventCatalog({ events, role, title, canManage, onAdd, onUpdate, onDelet
             <option key={item}>{item}</option>
           ))}
         </select>
+        <select value={artist} onChange={(event) => setArtist(event.target.value)}>
+          <option>Semua artis</option>
+          {artists.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
       </div>
       <div className="card-grid">
         {filteredEvents.map((event) => (
@@ -206,9 +224,12 @@ function EventCatalog({ events, role, title, canManage, onAdd, onUpdate, onDelet
             <dl>
               <Info label="Venue" value={event.venue} />
               <Info label="Tanggal" value={event.date} />
+              <Info label="Waktu" value={event.time} />
+              <Info label="Kategori" value={event.category} />
               <Info label="Harga" value={formatCurrency(event.price)} />
               <Info label="Kuota" value={`${event.quota} tiket`} />
             </dl>
+            <p>{event.description}</p>
             <div className="action-row">
               {role === 'customer' && (
                 <button className="primary-button" type="button" onClick={() => onCheckout(event)}>
@@ -314,7 +335,8 @@ type TablePageProps<T extends { id: number }> = {
   title: string
   data: T[]
   columns: Column<T>[]
-  canManage: boolean
+  canCreate: boolean
+  canEdit: boolean
   onAdd: () => void
   onUpdate: (item: T) => void
   onDelete: (item: T) => void
@@ -325,7 +347,8 @@ function TablePage<T extends { id: number }>({
   title,
   data,
   columns,
-  canManage,
+  canCreate,
+  canEdit,
   onAdd,
   onUpdate,
   onDelete,
@@ -339,7 +362,7 @@ function TablePage<T extends { id: number }>({
       <PageHeader
         title={title}
         action={
-          canManage && (
+          canCreate && (
             <button className="primary-button" type="button" onClick={onAdd}>
               Tambah Data
             </button>
@@ -363,7 +386,7 @@ function TablePage<T extends { id: number }>({
         columns={columns}
         data={filteredData}
         actions={
-          canManage
+          canEdit
             ? (item) => (
                 <div className="table-actions">
                   <button className="small-button" type="button" onClick={() => onUpdate(item)}>
@@ -382,6 +405,7 @@ function TablePage<T extends { id: number }>({
 }
 
 const artistColumns: Column<Artist>[] = [
+  { key: 'id', label: 'Artist ID', render: (artist) => `ART-${artist.id}` },
   { key: 'name', label: 'Nama', render: (artist) => artist.name },
   { key: 'genre', label: 'Genre', render: (artist) => artist.genre },
   { key: 'country', label: 'Negara', render: (artist) => artist.country },
@@ -389,12 +413,15 @@ const artistColumns: Column<Artist>[] = [
 
 const seatColumns: Column<Seat>[] = [
   { key: 'venue', label: 'Venue', render: (seat) => seat.venue },
-  { key: 'code', label: 'Kode', render: (seat) => seat.code },
   { key: 'section', label: 'Section', render: (seat) => seat.section },
+  { key: 'row', label: 'Row', render: (seat) => seat.row },
+  { key: 'number', label: 'Seat Number', render: (seat) => seat.number },
+  { key: 'code', label: 'Kode', render: (seat) => getSeatCode(seat) },
   { key: 'status', label: 'Status', render: (seat) => <StatusPill value={seat.status} /> },
 ]
 
 const ticketCategoryColumns: Column<TicketCategory>[] = [
+  { key: 'id', label: 'Category ID', render: (category) => `CAT-${category.id}` },
   { key: 'event', label: 'Event', render: (category) => category.event },
   { key: 'name', label: 'Kategori', render: (category) => category.name },
   { key: 'price', label: 'Harga', render: (category) => formatCurrency(category.price) },
@@ -403,16 +430,22 @@ const ticketCategoryColumns: Column<TicketCategory>[] = [
 
 const ticketColumns: Column<Ticket>[] = [
   { key: 'code', label: 'Kode', render: (ticket) => ticket.code },
+  { key: 'orderCode', label: 'Order', render: (ticket) => ticket.orderCode },
   { key: 'event', label: 'Event', render: (ticket) => ticket.event },
+  { key: 'category', label: 'Kategori', render: (ticket) => ticket.category },
+  { key: 'seatCode', label: 'Kursi', render: (ticket) => ticket.seatCode },
   { key: 'customer', label: 'Customer', render: (ticket) => ticket.customer },
   { key: 'status', label: 'Status', render: (ticket) => <StatusPill value={ticket.status} /> },
 ]
 
 const orderColumns: Column<Order>[] = [
   { key: 'code', label: 'Kode', render: (order) => order.code },
+  { key: 'orderDate', label: 'Tanggal', render: (order) => order.orderDate },
   { key: 'customer', label: 'Customer', render: (order) => order.customer },
   { key: 'event', label: 'Event', render: (order) => order.event },
+  { key: 'ticketCategory', label: 'Kategori', render: (order) => order.ticketCategory },
   { key: 'quantity', label: 'Jumlah', render: (order) => order.quantity },
+  { key: 'promoCode', label: 'Promo', render: (order) => order.promoCode },
   { key: 'total', label: 'Total', render: (order) => formatCurrency(order.total) },
   { key: 'status', label: 'Status', render: (order) => <StatusPill value={order.status} /> },
 ]
@@ -422,7 +455,72 @@ const promotionColumns: Column<Promotion>[] = [
   { key: 'title', label: 'Nama', render: (promotion) => promotion.title },
   { key: 'discountType', label: 'Tipe', render: (promotion) => promotion.discountType },
   { key: 'value', label: 'Nilai', render: (promotion) => promotion.value },
+  { key: 'startDate', label: 'Mulai', render: (promotion) => promotion.startDate },
+  { key: 'endDate', label: 'Berakhir', render: (promotion) => promotion.endDate },
+  { key: 'usageLimit', label: 'Batas', render: (promotion) => promotion.usageLimit },
 ]
+
+function PromotionPage({
+  promotions,
+  canCreate,
+  canEdit,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: {
+  promotions: Promotion[]
+  canCreate: boolean
+  canEdit: boolean
+  onAdd: () => void
+  onUpdate: (item: Promotion) => void
+  onDelete: (item: Promotion) => void
+}) {
+  const [discountType, setDiscountType] = useState('Semua tipe')
+  const data =
+    discountType === 'Semua tipe'
+      ? promotions
+      : promotions.filter((promotion) => promotion.discountType === discountType)
+
+  return (
+    <section className="content-page">
+      <PageHeader
+        title="Promosi"
+        action={
+          canCreate && (
+            <button className="primary-button" type="button" onClick={onAdd}>
+              Buat Promo
+            </button>
+          )
+        }
+      />
+      <div className="toolbar-row single">
+        <select value={discountType} onChange={(event) => setDiscountType(event.target.value)}>
+          <option>Semua tipe</option>
+          <option>Persentase</option>
+          <option>Nominal</option>
+        </select>
+      </div>
+      <DataTable
+        columns={promotionColumns}
+        data={data}
+        actions={
+          canEdit
+            ? (item) => (
+                <div className="table-actions">
+                  <button className="small-button" type="button" onClick={() => onUpdate(item)}>
+                    Update
+                  </button>
+                  <button className="small-danger-button" type="button" onClick={() => onDelete(item)}>
+                    Delete
+                  </button>
+                </div>
+              )
+            : undefined
+        }
+      />
+    </section>
+  )
+}
 
 function Info({ label, value }: { label: string; value: string }) {
   return (

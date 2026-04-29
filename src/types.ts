@@ -65,6 +65,9 @@ export type EventItem = {
   artist: string
   venue: string
   date: string
+  time: string
+  category: string
+  description: string
   price: number
   quota: number
 }
@@ -72,8 +75,9 @@ export type EventItem = {
 export type Seat = {
   id: number
   venue: string
-  code: string
   section: string
+  row: string
+  number: string
   status: 'Tersedia' | 'Terisi'
 }
 
@@ -88,6 +92,9 @@ export type TicketCategory = {
 export type Ticket = {
   id: number
   code: string
+  orderCode: string
+  category: string
+  seatCode: string
   event: string
   customer: string
   status: 'Aktif' | 'Dipakai' | 'Dibatalkan'
@@ -96,9 +103,12 @@ export type Ticket = {
 export type Order = {
   id: number
   code: string
+  orderDate: string
   customer: string
   event: string
+  ticketCategory: string
   quantity: number
+  promoCode: string
   total: number
   status: 'Menunggu' | 'Dibayar' | 'Dibatalkan'
 }
@@ -109,6 +119,9 @@ export type Promotion = {
   title: string
   discountType: 'Persentase' | 'Nominal'
   value: string
+  startDate: string
+  endDate: string
+  usageLimit: number
 }
 
 export type AppData = {

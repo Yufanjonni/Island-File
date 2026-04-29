@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { Modal } from './components/Modal'
+import { ResourceDialog, type ResourceDialogState, type ResourceKind } from './components/ResourceDialog'
 import { TopNav } from './components/TopNav'
 import { emptyRegisterForm, initialData, initialUsers } from './data/mockData'
 import { AuthLayout, LoginPanel, RegisterPanel, RolePanel } from './pages/AuthPages'
@@ -7,9 +9,15 @@ import { CheckoutPage } from './pages/CheckoutPage'
 import { FeaturePage } from './pages/FeaturePages'
 import { DashboardPage, ProfilePage, type PasswordForm, type ProfileForm } from './pages/ProfilePages'
 import type { AppData, EventItem, Page, RegisterForm, Role, Toast, User } from './types'
+import {
+  applyResourceDraft,
+  createDefaultDraft,
+  createDraftFromData,
+  deleteResource as deleteResourceFromData,
+  getResourceName,
+  validateResourceDraft,
+} from './utils/resourceDrafts'
 import { validateRegister } from './utils/validation'
-
-type ResourceKind = keyof AppData
 
 const emptyPasswordForm: PasswordForm = {
   currentPassword: '',
@@ -38,6 +46,10 @@ function App() {
   const [passwordOpen, setPasswordOpen] = useState(false)
   const [checkoutEvent, setCheckoutEvent] = useState<EventItem | null>(null)
   const [checkoutQuantity, setCheckoutQuantity] = useState(1)
+  const [checkoutCategory, setCheckoutCategory] = useState('')
+  const [checkoutPromo, setCheckoutPromo] = useState('')
+  const [resourceDialog, setResourceDialog] = useState<ResourceDialogState | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<{ kind: ResourceKind; id: number } | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
 
   const activeUser = useMemo(
@@ -167,6 +179,8 @@ function App() {
   function openCheckout(eventItem: EventItem) {
     setCheckoutEvent(eventItem)
     setCheckoutQuantity(1)
+    setCheckoutCategory(eventItem.category)
+    setCheckoutPromo('')
     navigate('checkout')
   }
 
@@ -179,8 +193,26 @@ function App() {
       showToast('error', 'Jumlah tiket melebihi kuota.')
       return
     }
+    if (quantity > 10) {
+      showToast('error', 'Maksimal 10 tiket per transaksi.')
+      return
+    }
 
     const orderId = Date.now()
+    const selectedCategory = appData.ticketCategories.find(
+      (category) => category.event === checkoutEvent.title && category.name === checkoutCategory,
+    )
+    const basePrice = selectedCategory?.price ?? checkoutEvent.price
+    const promo = appData.promotions.find((item) => item.code.toLowerCase() === checkoutPromo.trim().toLowerCase())
+    const subtotal = basePrice * quantity
+    const discount =
+      promo?.discountType === 'Persentase'
+        ? Math.round((subtotal * Number.parseInt(promo.value, 10)) / 100)
+        : promo
+          ? Number.parseInt(promo.value.replace(/\D/g, ''), 10)
+          : 0
+    const total = Math.max(0, subtotal - discount)
+
     setAppData((currentData) => ({
       ...currentData,
       events: currentData.events.map((item) =>
@@ -191,11 +223,18 @@ function App() {
         {
           id: orderId,
           code: `ORD-${String(orderId).slice(-4)}`,
+          orderDate: new Date().toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          }),
           customer: activeUser.name,
           event: checkoutEvent.title,
+          ticketCategory: checkoutCategory,
           quantity,
-          total: checkoutEvent.price * quantity,
-          status: 'Dibayar',
+          promoCode: promo?.code ?? '-',
+          total,
+          status: 'Menunggu',
         },
       ],
       tickets: [
@@ -203,6 +242,9 @@ function App() {
         {
           id: orderId,
           code: `TKT-${String(orderId).slice(-4)}`,
+          orderCode: `ORD-${String(orderId).slice(-4)}`,
+          category: checkoutCategory,
+          seatCode: '-',
           customer: activeUser.name,
           event: checkoutEvent.title,
           status: 'Aktif',
@@ -214,166 +256,44 @@ function App() {
     showToast('success', 'Pesanan berhasil dibuat.')
   }
 
-  function addResource(kind: ResourceKind) {
-    setAppData((currentData) => {
-      const nextId = Date.now()
-      if (kind === 'venues') {
-        return {
-          ...currentData,
-          venues: [
-            ...currentData.venues,
-            {
-              id: nextId,
-              name: 'Venue Baru',
-              city: 'Jakarta',
-              address: 'Alamat venue baru',
-              capacity: 400,
-              seatingType: 'Campuran',
-            },
-          ],
-        }
-      }
-      if (kind === 'events') {
-        return {
-          ...currentData,
-          events: [
-            ...currentData.events,
-            {
-              id: nextId,
-              organizerId: activeUser?.id ?? 2,
-              title: 'Event Baru',
-              artist: 'Artis Baru',
-              venue: currentData.venues[0]?.name ?? 'Venue Baru',
-              date: '10 Juni 2026',
-              price: 150000,
-              quota: 100,
-            },
-          ],
-        }
-      }
-      if (kind === 'artists') {
-        return {
-          ...currentData,
-          artists: [...currentData.artists, { id: nextId, name: 'Artis Baru', genre: 'Pop', country: 'Indonesia' }],
-        }
-      }
-      if (kind === 'seats') {
-        return {
-          ...currentData,
-          seats: [
-            ...currentData.seats,
-            { id: nextId, venue: currentData.venues[0]?.name ?? 'Venue Baru', code: 'C-01', section: 'C', status: 'Tersedia' },
-          ],
-        }
-      }
-      if (kind === 'ticketCategories') {
-        return {
-          ...currentData,
-          ticketCategories: [
-            ...currentData.ticketCategories,
-            { id: nextId, event: currentData.events[0]?.title ?? 'Event Baru', name: 'Regular', price: 150000, quota: 100 },
-          ],
-        }
-      }
-      if (kind === 'tickets') {
-        return {
-          ...currentData,
-          tickets: [
-            ...currentData.tickets,
-            {
-              id: nextId,
-              code: `TKT-${String(nextId).slice(-4)}`,
-              event: currentData.events[0]?.title ?? 'Event Baru',
-              customer: 'Customer Baru',
-              status: 'Aktif',
-            },
-          ],
-        }
-      }
-      if (kind === 'orders') {
-        return {
-          ...currentData,
-          orders: [
-            ...currentData.orders,
-            {
-              id: nextId,
-              code: `ORD-${String(nextId).slice(-4)}`,
-              customer: 'Customer Baru',
-              event: currentData.events[0]?.title ?? 'Event Baru',
-              quantity: 1,
-              total: 150000,
-              status: 'Menunggu',
-            },
-          ],
-        }
-      }
-      return {
-        ...currentData,
-        promotions: [
-          ...currentData.promotions,
-          { id: nextId, code: 'PROMO', title: 'Promosi Baru', discountType: 'Nominal', value: 'Rp25.000' },
-        ],
-      }
-    })
-    showToast('success', 'Data berhasil ditambahkan.')
+  function openCreateResource(kind: ResourceKind) {
+    setResourceDialog({ kind, mode: 'create', draft: createDefaultDraft(kind, appData) })
+    setToast(null)
   }
 
-  function updateResource(kind: ResourceKind, id: number) {
-    setAppData((currentData) => {
-      if (kind === 'venues') {
-        return { ...currentData, venues: currentData.venues.map((item) => (item.id === id ? { ...item, capacity: item.capacity + 25 } : item)) }
-      }
-      if (kind === 'events') {
-        return { ...currentData, events: currentData.events.map((item) => (item.id === id ? { ...item, quota: item.quota + 10 } : item)) }
-      }
-      if (kind === 'artists') {
-        return { ...currentData, artists: currentData.artists.map((item) => (item.id === id ? { ...item, genre: 'Pop Alternatif' } : item)) }
-      }
-      if (kind === 'seats') {
-        return {
-          ...currentData,
-          seats: currentData.seats.map((item) =>
-            item.id === id ? { ...item, status: item.status === 'Tersedia' ? 'Terisi' : 'Tersedia' } : item,
-          ),
-        }
-      }
-      if (kind === 'ticketCategories') {
-        return {
-          ...currentData,
-          ticketCategories: currentData.ticketCategories.map((item) =>
-            item.id === id ? { ...item, price: item.price + 25000 } : item,
-          ),
-        }
-      }
-      if (kind === 'tickets') {
-        return {
-          ...currentData,
-          tickets: currentData.tickets.map((item) =>
-            item.id === id ? { ...item, status: item.status === 'Aktif' ? 'Dipakai' : 'Aktif' } : item,
-          ),
-        }
-      }
-      if (kind === 'orders') {
-        return {
-          ...currentData,
-          orders: currentData.orders.map((item) =>
-            item.id === id ? { ...item, status: item.status === 'Menunggu' ? 'Dibayar' : 'Menunggu' } : item,
-          ),
-        }
-      }
-      return {
-        ...currentData,
-        promotions: currentData.promotions.map((item) => (item.id === id ? { ...item, value: 'Rp75.000' } : item)),
-      }
-    })
-    showToast('success', 'Data berhasil diperbarui.')
+  function openUpdateResource(kind: ResourceKind, id: number) {
+    setResourceDialog({ kind, mode: 'update', id, draft: createDraftFromData(kind, appData, id) })
+    setToast(null)
   }
 
-  function deleteResource(kind: ResourceKind, id: number) {
-    setAppData((currentData) => ({
-      ...currentData,
-      [kind]: currentData[kind].filter((item) => item.id !== id),
-    }))
+  function requestDeleteResource(kind: ResourceKind, id: number) {
+    if (kind === 'seats' && appData.seats.find((seat) => seat.id === id)?.status === 'Terisi') {
+      showToast('error', 'Kursi ini sudah di-assign ke tiket dan tidak dapat dihapus.')
+      return
+    }
+    setPendingDelete({ kind, id })
+    setToast(null)
+  }
+
+  function submitResourceDialog(event: FormEvent) {
+    event.preventDefault()
+    if (!resourceDialog) return
+
+    const validationMessage = validateResourceDraft(resourceDialog, appData)
+    if (validationMessage) {
+      showToast('error', validationMessage)
+      return
+    }
+
+    setAppData((currentData) => applyResourceDraft(resourceDialog, currentData, activeUser))
+    setResourceDialog(null)
+    showToast('success', resourceDialog.mode === 'create' ? 'Data berhasil ditambahkan.' : 'Data berhasil diperbarui.')
+  }
+
+  function confirmDeleteResource() {
+    if (!pendingDelete) return
+    setAppData((currentData) => deleteResourceFromData(pendingDelete.kind, pendingDelete.id, currentData))
+    setPendingDelete(null)
     showToast('success', 'Data berhasil dihapus.')
   }
 
@@ -435,8 +355,14 @@ function App() {
         {activeUser && page === 'checkout' && checkoutEvent && (
           <CheckoutPage
             event={checkoutEvent}
+            categories={appData.ticketCategories.filter((category) => category.event === checkoutEvent.title)}
+            promotions={appData.promotions}
             quantity={checkoutQuantity}
+            category={checkoutCategory}
+            promoCode={checkoutPromo}
             onQuantityChange={setCheckoutQuantity}
+            onCategoryChange={setCheckoutCategory}
+            onPromoChange={setCheckoutPromo}
             onSubmit={submitCheckout}
             onBack={() => navigate('events')}
           />
@@ -447,11 +373,39 @@ function App() {
             page={page}
             data={appData}
             user={activeUser}
-            onAdd={addResource}
-            onUpdate={updateResource}
-            onDelete={deleteResource}
+            onAdd={openCreateResource}
+            onUpdate={openUpdateResource}
+            onDelete={requestDeleteResource}
             onCheckout={openCheckout}
           />
+        )}
+
+        {resourceDialog && (
+          <ResourceDialog
+            state={resourceDialog}
+            data={appData}
+            onDraftChange={(draft) => setResourceDialog({ ...resourceDialog, draft })}
+            onClose={() => setResourceDialog(null)}
+            onSubmit={submitResourceDialog}
+          />
+        )}
+
+        {pendingDelete && (
+          <Modal title="Konfirmasi Penghapusan" onClose={() => setPendingDelete(null)}>
+            <div className="delete-confirmation">
+              <p>
+                Hapus {getResourceName(pendingDelete.kind, pendingDelete.id, appData)}?
+              </p>
+              <div className="action-row">
+                <button className="danger-button" type="button" onClick={confirmDeleteResource}>
+                  Hapus
+                </button>
+                <button className="secondary-button" type="button" onClick={() => setPendingDelete(null)}>
+                  Batal
+                </button>
+              </div>
+            </div>
+          </Modal>
         )}
       </section>
     </main>
