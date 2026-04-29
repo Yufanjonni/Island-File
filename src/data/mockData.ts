@@ -265,16 +265,13 @@ export const initialData: AppData = {
     },
   ],
   seats: [
-    { id: 1, venue: 'Aula Merdeka', section: 'A', row: '1', number: '01', status: 'Tersedia' },
-    { id: 2, venue: 'Aula Merdeka', section: 'A', row: '1', number: '02', status: 'Terisi' },
-    { id: 3, venue: 'Teater Aruna', section: 'B', row: '2', number: '14', status: 'Tersedia' },
-    ...Array.from({ length: 27 }, (_, index) => ({
-      id: index + 4,
-      venue: index % 3 === 0 ? 'Balai Kartini Timur' : index % 2 === 0 ? 'Aula Merdeka' : 'Teater Aruna',
-      section: String.fromCharCode(65 + (index % 5)),
-      row: String(Math.floor(index / 5) + 1),
-      number: String(index + 3).padStart(2, '0'),
-      status: index % 6 === 0 ? ('Terisi' as const) : ('Tersedia' as const),
+    ...Array.from({ length: 30 }, (_, i) => ({
+      id: i + 1,
+      venue: i < 10 ? 'Aula Merdeka' : i < 20 ? 'Teater Aruna' : 'Balai Kartini Timur',
+      section: i < 10 ? 'A' : i < 20 ? 'B' : 'C',
+      row: String(Math.floor((i % 10) / 5) + 1),
+      number: String((i % 5) + 1).padStart(2, '0'),
+      status: (i % 3 === 0) ? ('Terisi' as const) : ('Tersedia' as const),
     })),
   ],
   ticketCategories: [

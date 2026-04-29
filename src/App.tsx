@@ -379,6 +379,8 @@ function App() {
         {activeUser && page === 'checkout' && checkoutEvent && (
           <CheckoutPage
             event={checkoutEvent}
+            venues={appData.venues}
+            seats={appData.seats}
             categories={appData.ticketCategories.filter((category) => category.event === checkoutEvent.title)}
             promotions={appData.promotions}
             quantity={checkoutQuantity}
