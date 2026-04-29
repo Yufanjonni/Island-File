@@ -77,6 +77,7 @@ function App() {
 
   function showToast(type: Toast['type'], text: string) {
     setToast({ type, text })
+    setTimeout(() => setToast(null), 500)
   }
 
   function chooseRole(role: Role) {
@@ -348,7 +349,13 @@ function App() {
         )}
 
         {activeUser && page === 'dashboard' && (
-          <DashboardPage user={activeUser} data={appData} userCount={users.length} onProfile={() => navigate('profile')} />
+          <DashboardPage
+            user={activeUser}
+            data={appData}
+            userCount={users.length}
+            onProfile={() => navigate('profile')}
+            onNavigate={navigate}
+          />
         )}
 
         {activeUser && page === 'profile' && (

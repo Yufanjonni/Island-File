@@ -4,6 +4,7 @@ import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select'
+import { StatCards } from '../components/StatCards'
 import {
   Table,
   TableBody,
@@ -451,18 +452,8 @@ function TablePage<T extends { id: number }>({
         }
       />
       {stats && (
-        <div className="mb-6 grid grid-cols-[repeat(auto-fit,minmax(150px,210px))] gap-3">
-          {stats.map((stat) => (
-            <Card key={stat.label} className="overflow-hidden">
-              <CardContent className="p-5">
-                <div className="mb-3 h-1 w-10 rounded-full bg-[var(--primary)]" />
-                <div className="text-xs font-medium uppercase tracking-wide text-[var(--muted-foreground)]">
-                  {stat.label}
-                </div>
-                <div className="mt-1 text-2xl font-bold leading-none text-[var(--foreground)]">{stat.value}</div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="mb-6">
+          <StatCards stats={stats} />
         </div>
       )}
       <div className="flex flex-col sm:flex-row gap-3 mb-4">
