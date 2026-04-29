@@ -140,6 +140,8 @@ type RegisterPanelProps = {
 }
 
 export function RegisterPanel({ form, role, onBack, onChange, onLogin, onSubmit }: RegisterPanelProps) {
+  const nameLabel = role === 'organizer' ? 'Nama Penyelenggara' : role === 'admin' ? 'Nama Admin' : 'Nama Lengkap'
+
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader className="space-y-1">
@@ -153,13 +155,13 @@ export function RegisterPanel({ form, role, onBack, onChange, onLogin, onSubmit 
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">{role === 'organizer' ? 'Nama Penyelenggara' : 'Nama Lengkap'}</Label>
+            <Label htmlFor="name">{nameLabel}</Label>
             <Input
               id="name"
               required
               value={form.name}
               onChange={(e) => onChange({ ...form, name: e.target.value })}
-              placeholder={role === 'organizer' ? 'Masukkan nama penyelenggara' : 'Masukkan nama lengkap'}
+              placeholder={`Masukkan ${nameLabel.toLowerCase()}`}
             />
           </div>
           <div className="space-y-2">
