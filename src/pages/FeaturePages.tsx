@@ -66,6 +66,7 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         data={[...data.artists].sort((a, b) => a.name.localeCompare(b.name))}
         columns={artistColumns}
         canCreate={user.role === 'admin'}
+        canEdit={user.role === 'admin'}
         onAdd={() => onAdd('artists')}
         onUpdate={(item) => onUpdate('artists', item.id)}
         onDelete={(item) => onDelete('artists', item.id)}
@@ -81,6 +82,7 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         data={data.seats}
         columns={seatColumns}
         canCreate={user.role !== 'customer'}
+        canEdit={user.role !== 'customer'}
         onAdd={() => onAdd('seats')}
         onUpdate={(item) => onUpdate('seats', item.id)}
         onDelete={(item) => onDelete('seats', item.id)}
@@ -101,6 +103,7 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         data={[...data.ticketCategories].sort((a, b) => `${a.event}${a.name}`.localeCompare(`${b.event}${b.name}`))}
         columns={ticketCategoryColumns}
         canCreate={user.role !== 'customer'}
+        canEdit={user.role !== 'customer'}
         onAdd={() => onAdd('ticketCategories')}
         onUpdate={(item) => onUpdate('ticketCategories', item.id)}
         onDelete={(item) => onDelete('ticketCategories', item.id)}
@@ -117,6 +120,7 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         data={tickets}
         columns={ticketColumns}
         canCreate={user.role !== 'customer'}
+        canEdit={user.role === 'admin'}
         onAdd={() => onAdd('tickets')}
         onUpdate={(item) => onUpdate('tickets', item.id)}
         onDelete={(item) => onDelete('tickets', item.id)}
@@ -141,6 +145,7 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         data={[...orders].sort((a, b) => b.id - a.id)}
         columns={orderColumns}
         canCreate={false}
+        canEdit={user.role === 'admin'}
         onAdd={() => onAdd('orders')}
         onUpdate={(item) => onUpdate('orders', item.id)}
         onDelete={(item) => onDelete('orders', item.id)}
@@ -424,6 +429,7 @@ type TablePageProps<T extends { id: number }> = {
   data: T[]
   columns: Column<T>[]
   canCreate: boolean
+  canEdit: boolean
   onAdd: () => void
   onUpdate: (item: T) => void
   onDelete: (item: T) => void
@@ -438,6 +444,7 @@ function TablePage<T extends { id: number }>({
   data,
   columns,
   canCreate,
+  canEdit,
   onAdd,
   onUpdate,
   onDelete,
@@ -503,7 +510,7 @@ function TablePage<T extends { id: number }>({
               {columns.map((column) => (
                 <TableHead key={column.key}>{column.label}</TableHead>
               ))}
-              <TableHead className="w-[150px]">Aksi</TableHead>
+              {canEdit && <TableHead className="w-[150px]">Aksi</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -512,21 +519,23 @@ function TablePage<T extends { id: number }>({
                 {columns.map((column) => (
                   <TableCell key={column.key}>{column.render(item)}</TableCell>
                 ))}
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => onUpdate(item)}>
-                      Update
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => onDelete(item)}>
-                      Delete
-                    </Button>
-                  </div>
-                </TableCell>
+                {canEdit && (
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => onUpdate(item)}>
+                        Update
+                      </Button>
+                      <Button variant="destructive" size="sm" onClick={() => onDelete(item)}>
+                        Delete
+                      </Button>
+                    </div>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
             {!filteredData.length && (
               <TableRow>
-                <TableCell colSpan={columns.length + 1} className="text-center text-[var(--muted-foreground)]">
+                <TableCell colSpan={columns.length + (canEdit ? 1 : 0)} className="text-center text-[var(--muted-foreground)]">
                   Data tidak ditemukan
                 </TableCell>
               </TableRow>
