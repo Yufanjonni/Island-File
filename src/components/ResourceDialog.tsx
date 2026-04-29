@@ -201,13 +201,7 @@ function Fields({
   if (kind === 'orders') {
     return (
       <>
-        <FieldInput label="Kode Order" value={state.draft.code} field="code" onChange={onDraftChange} required />
-        <FieldInput label="Tanggal" value={state.draft.orderDate} field="orderDate" onChange={onDraftChange} required />
-        <FieldInput label="Customer" value={state.draft.customer} field="customer" onChange={onDraftChange} required />
-        <FieldInput label="Event" value={state.draft.event} field="event" onChange={onDraftChange} required />
-        <FieldInput label="Kategori Tiket" value={state.draft.ticketCategory} field="ticketCategory" onChange={onDraftChange} required />
-        <FieldInput label="Jumlah" value={state.draft.quantity} field="quantity" type="number" onChange={onDraftChange} required />
-        <FieldInput label="Total" value={state.draft.total} field="total" type="number" onChange={onDraftChange} required />
+        <FieldInput label="Order ID" value={state.draft.code} field="code" onChange={onDraftChange} readOnly />
         <FieldSelect
           label="Status Pembayaran"
           value={state.draft.status}

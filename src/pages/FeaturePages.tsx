@@ -155,7 +155,9 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
           { label: 'Total Order', value: String(orders.length) },
           { label: 'Pending', value: String(orders.filter((order) => order.status === 'Menunggu').length) },
           { label: 'Dibayar', value: String(orders.filter((order) => order.status === 'Dibayar').length) },
-          { label: 'Revenue', value: formatCurrency(orders.reduce((total, order) => total + order.total, 0)) },
+          ...(user.role !== 'customer'
+            ? [{ label: 'Revenue', value: formatCurrency(orders.reduce((total, order) => total + order.total, 0)) }]
+            : []),
         ]}
       />
     )

@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '../components/ui/Button'
@@ -18,9 +17,12 @@ type CheckoutPageProps = {
   quantity: number
   category: string
   promoCode: string
+  selectedSeats: string[]
   onQuantityChange: (value: number) => void
   onCategoryChange: (value: string) => void
   onPromoChange: (value: string) => void
+  onSelectedSeatsChange: (value: string[]) => void
+  onApplyPromo: () => void
   onSubmit: (event: FormEvent) => void
   onBack: () => void
 }
@@ -34,14 +36,15 @@ export function CheckoutPage({
   quantity,
   category,
   promoCode,
+  selectedSeats,
   onQuantityChange,
   onCategoryChange,
   onPromoChange,
+  onSelectedSeatsChange,
+  onApplyPromo,
   onSubmit,
   onBack,
 }: CheckoutPageProps) {
-  const [selectedSeats, setSelectedSeats] = useState<string[]>([])
-  
   const venueData = venues.find(v => v.name === event.venue)
   const isReservedSeating = venueHasReservedSeating(venueData)
   const availableSeats = isReservedSeating 
@@ -52,7 +55,7 @@ export function CheckoutPage({
   
   const selectedCategory = categories.find((c) => c.name === category)
   const basePrice = selectedCategory?.price ?? event.price
-  const subtotal = basePrice * (quantity + (isReservedSeating ? selectedSeats.length : 0))
+  const subtotal = basePrice * quantity
   
   const promo = promotions.find((p) => p.code.toLowerCase() === promoCode.trim().toLowerCase())
   const discount = promo
@@ -64,9 +67,9 @@ export function CheckoutPage({
 
   const toggleSeat = (seatCode: string) => {
     if (selectedSeats.includes(seatCode)) {
-      setSelectedSeats(selectedSeats.filter(s => s !== seatCode))
+      onSelectedSeatsChange(selectedSeats.filter(s => s !== seatCode))
     } else if (selectedSeats.length < quantity) {
-      setSelectedSeats([...selectedSeats, seatCode])
+      onSelectedSeatsChange([...selectedSeats, seatCode])
     }
   }
 
@@ -112,7 +115,7 @@ export function CheckoutPage({
             <form onSubmit={onSubmit} className="grid gap-4">
               <div className="grid gap-2">
                 <Label>Kategori Tiket</Label>
-                <Select value={category} onValueChange={(val) => { onCategoryChange(val); setSelectedSeats([]); }}>
+                <Select value={category} onValueChange={(val) => { onCategoryChange(val); onSelectedSeatsChange([]); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih kategori" />
                   </SelectTrigger>
@@ -198,7 +201,7 @@ export function CheckoutPage({
                   min={1}
                   max={10}
                   value={quantity}
-                  onChange={(e) => { onQuantityChange(parseInt(e.target.value) || 1); setSelectedSeats([]); }}
+                  onChange={(e) => { onQuantityChange(parseInt(e.target.value) || 1); onSelectedSeatsChange([]); }}
                 />
                 <p className="text-xs text-[#64748b]">Maximum 10 tiket per transaksi</p>
               </div>
@@ -211,6 +214,9 @@ export function CheckoutPage({
                     onChange={(e) => onPromoChange(e.target.value)}
                     placeholder="Masukkan kode promo"
                   />
+                  <Button type="button" variant="outline" onClick={onApplyPromo}>
+                    Terapkan
+                  </Button>
                 </div>
               </div>
 

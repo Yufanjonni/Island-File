@@ -48,6 +48,7 @@ function App() {
   const [checkoutQuantity, setCheckoutQuantity] = useState(1)
   const [checkoutCategory, setCheckoutCategory] = useState('')
   const [checkoutPromo, setCheckoutPromo] = useState('')
+  const [checkoutSeats, setCheckoutSeats] = useState<string[]>([])
   const [resourceDialog, setResourceDialog] = useState<ResourceDialogState | null>(null)
   const [pendingDelete, setPendingDelete] = useState<{ kind: ResourceKind; id: number } | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
@@ -194,7 +195,17 @@ function App() {
     setCheckoutQuantity(1)
     setCheckoutCategory(eventItem.category)
     setCheckoutPromo('')
+    setCheckoutSeats([])
     navigate('checkout')
+  }
+
+  function applyCheckoutPromo() {
+    if (!checkoutPromo.trim()) {
+      showToast('error', 'Kode promo belum diisi.')
+      return
+    }
+    const promo = appData.promotions.find((item) => item.code.toLowerCase() === checkoutPromo.trim().toLowerCase())
+    showToast(promo ? 'success' : 'error', promo ? 'Kode promo berhasil diterapkan.' : 'Kode promo tidak ditemukan.')
   }
 
   function submitCheckout(event: FormEvent) {
@@ -210,8 +221,13 @@ function App() {
       showToast('error', 'Maksimal 10 tiket per transaksi.')
       return
     }
+    if (!checkoutCategory) {
+      showToast('error', 'Kategori tiket wajib dipilih.')
+      return
+    }
 
     const orderId = Date.now()
+    const orderCode = `ORD-${String(orderId).slice(-4)}`
     const selectedCategory = appData.ticketCategories.find(
       (category) => category.event === checkoutEvent.title && category.name === checkoutCategory,
     )
@@ -235,7 +251,7 @@ function App() {
         ...currentData.orders,
         {
           id: orderId,
-          code: `ORD-${String(orderId).slice(-4)}`,
+          code: orderCode,
           orderDate: new Date().toLocaleDateString('id-ID', {
             day: 'numeric',
             month: 'long',
@@ -252,19 +268,23 @@ function App() {
       ],
       tickets: [
         ...currentData.tickets,
-        {
-          id: orderId,
-          code: `TKT-${String(orderId).slice(-4)}`,
-          orderCode: `ORD-${String(orderId).slice(-4)}`,
+        ...Array.from({ length: quantity }, (_, index) => ({
+          id: orderId + index,
+          code: `TKT-${String(orderId + index).slice(-4)}`,
+          orderCode,
           category: checkoutCategory,
-          seatCode: '-',
+          seatCode: checkoutSeats[index] ?? '-',
           customer: activeUser.name,
           event: checkoutEvent.title,
-          status: 'Aktif',
-        },
+          status: 'Aktif' as const,
+        })),
       ],
+      seats: currentData.seats.map((seat) =>
+        checkoutSeats.includes(`${seat.section}-${seat.row}-${seat.number}`) ? { ...seat, status: 'Terisi' } : seat,
+      ),
     }))
     setCheckoutEvent(null)
+    setCheckoutSeats([])
     setPage('myOrders')
     showToast('success', 'Pesanan berhasil dibuat.')
   }
@@ -386,9 +406,12 @@ function App() {
             quantity={checkoutQuantity}
             category={checkoutCategory}
             promoCode={checkoutPromo}
+            selectedSeats={checkoutSeats}
             onQuantityChange={setCheckoutQuantity}
             onCategoryChange={setCheckoutCategory}
             onPromoChange={setCheckoutPromo}
+            onSelectedSeatsChange={setCheckoutSeats}
+            onApplyPromo={applyCheckoutPromo}
             onSubmit={submitCheckout}
             onBack={() => navigate('events')}
           />
