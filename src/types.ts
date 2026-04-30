@@ -70,6 +70,7 @@ export type EventItem = {
   description: string
   price: number
   quota: number
+  imageUrl?: string
 }
 
 export type Seat = {

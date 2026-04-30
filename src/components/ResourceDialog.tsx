@@ -97,37 +97,38 @@ function Fields({
     )
   }
 
-  if (kind === 'events') {
-    return (
-      <div className="grid gap-5 md:grid-cols-2">
-        <div className="grid gap-4">
-          <FieldInput label="Judul Acara (Event_Title)" value={state.draft.title} field="title" onChange={onDraftChange} required />
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FieldInput label="Tanggal (Date)" value={state.draft.date} field="date" type="date" onChange={onDraftChange} required />
-            <FieldInput label="Waktu (Time)" value={state.draft.time} field="time" type="time" onChange={onDraftChange} required />
-          </div>
-          <FieldSelect
-            label="Venue (Venue_ID)"
-            value={state.draft.venue}
-            field="venue"
-            options={data.venues.map((v) => v.name)}
-            onChange={onDraftChange}
-          />
-          <FieldPillSelect
-            label="Artis (Event_Artist)"
-            value={state.draft.artist}
-            field="artist"
-            options={data.artists.map((a) => a.name)}
-            onChange={onDraftChange}
-          />
-        </div>
-        <div className="grid gap-4">
-          <TicketCategoryFields draft={state.draft} onChange={onDraftChange} />
-          <FieldTextarea label="Deskripsi" value={state.draft.description} field="description" onChange={onDraftChange} />
-        </div>
-      </div>
-    )
-  }
+   if (kind === 'events') {
+     return (
+       <div className="grid gap-5 md:grid-cols-2">
+         <div className="grid gap-4">
+           <FieldInput label="Judul Acara (Event_Title)" value={state.draft.title} field="title" onChange={onDraftChange} required />
+           <FieldInput label="Gambar Acara (URL)" value={state.draft.imageUrl} field="imageUrl" onChange={onDraftChange} />
+           <div className="grid gap-4 sm:grid-cols-2">
+             <FieldInput label="Tanggal (Date)" value={state.draft.date} field="date" type="date" onChange={onDraftChange} required />
+             <FieldInput label="Waktu (Time)" value={state.draft.time} field="time" type="time" onChange={onDraftChange} required />
+           </div>
+           <FieldSelect
+             label="Venue (Venue_ID)"
+             value={state.draft.venue}
+             field="venue"
+             options={data.venues.map((v) => v.name)}
+             onChange={onDraftChange}
+           />
+           <FieldPillSelect
+             label="Artis (Event_Artist)"
+             value={state.draft.artist}
+             field="artist"
+             options={data.artists.map((a) => a.name)}
+             onChange={onDraftChange}
+           />
+         </div>
+         <div className="grid gap-4">
+           <TicketCategoryFields draft={state.draft} onChange={onDraftChange} />
+           <FieldTextarea label="Deskripsi" value={state.draft.description} field="description" onChange={onDraftChange} />
+         </div>
+       </div>
+     )
+   }
 
   if (kind === 'artists') {
     return (

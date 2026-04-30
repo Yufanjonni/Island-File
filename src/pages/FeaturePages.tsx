@@ -264,14 +264,23 @@ function EventCatalog({ events, title, canManage, canBuy, onAdd, onUpdate, onDel
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filteredEvents.map((event) => (
-          <Card key={event.id} className="overflow-hidden">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg leading-tight">{event.title}</CardTitle>
-              <p className="text-sm text-[var(--muted-foreground)]">{event.artist}</p>
-            </CardHeader>
-            <CardContent className="grid gap-2 text-sm">
+       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+         {filteredEvents.map((event) => (
+           <Card key={event.id} className="overflow-hidden">
+             {event.imageUrl && (
+               <div className="h-[200px] w-full overflow-hidden bg-[var(--muted)]">
+                 <img 
+                   src={event.imageUrl} 
+                   alt={event.title} 
+                   className="h-full w-full object-cover"
+                 />
+               </div>
+             )}
+             <CardHeader className="pb-3">
+               <CardTitle className="text-lg leading-tight">{event.title}</CardTitle>
+               <p className="text-sm text-[var(--muted-foreground)]">{event.artist}</p>
+             </CardHeader>
+             <CardContent className="grid gap-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-[var(--muted-foreground)]">Venue</span>
                 <span className="font-medium">{event.venue}</span>
