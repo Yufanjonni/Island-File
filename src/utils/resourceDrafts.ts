@@ -28,7 +28,7 @@ export function createDefaultDraft(kind: ResourceKind, data: AppData): ResourceD
   if (kind === 'tickets') {
     const firstOrder = data.orders[0]
     return {
-      orderCode: firstOrder ? getOrderOption(firstOrder) : '',
+      orderCode: firstOrder?.code ?? '',
       category: data.ticketCategories[0]?.name ?? '',
       seatCode: '-',
       status: 'Aktif',
@@ -355,10 +355,6 @@ function updateSeatStatus(seats: Seat[], code: string, status: Seat['status']) {
 
 function normalizeSeatCode(code: string | undefined) {
   return !code || code === 'Tanpa Kursi' ? '-' : code
-}
-
-function getOrderOption(order: Order) {
-  return `${order.code} - ${order.customer} - ${order.event}`
 }
 
 function toStringDraft(item: unknown): ResourceDraft {

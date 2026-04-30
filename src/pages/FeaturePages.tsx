@@ -118,7 +118,7 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         title={page === 'myTickets' ? 'Tiket Saya' : page === 'ticketAssets' ? 'Tiket (Aset)' : 'Manajemen Tiket'}
         description="Kelola data tiket"
         data={tickets}
-        columns={ticketColumns}
+        columns={getTicketColumns(data, page !== 'myTickets')}
         canCreate={user.role !== 'customer'}
         canEdit={user.role === 'admin'}
         onAdd={() => onAdd('tickets')}
@@ -126,11 +126,13 @@ export function FeaturePage({ page, data, user, onAdd, onUpdate, onDelete, onChe
         onDelete={(item) => onDelete('tickets', item.id)}
         statusOptions={['Aktif', 'Dipakai', 'Dibatalkan']}
         getStatus={(item) => item.status}
-        stats={page === 'myTickets' ? [
+        searchPlaceholder="Cari kode tiket atau nama event"
+        getSearchText={(ticket) => `${ticket.code} ${ticket.event}`}
+        stats={[
           { label: 'Total Tiket', value: String(tickets.length) },
           { label: 'Valid', value: String(tickets.filter((ticket) => ticket.status === 'Aktif').length) },
           { label: 'Terpakai', value: String(tickets.filter((ticket) => ticket.status === 'Dipakai').length) },
-        ] : undefined}
+        ]}
       />
     )
   }
@@ -443,6 +445,8 @@ type TablePageProps<T extends { id: number }> = {
   stats?: Array<{ label: string; value: string }>
   statusOptions?: string[]
   getStatus?: (item: T) => string
+  searchPlaceholder?: string
+  getSearchText?: (item: T) => string
 }
 
 function TablePage<T extends { id: number }>({
@@ -458,11 +462,14 @@ function TablePage<T extends { id: number }>({
   stats,
   statusOptions,
   getStatus,
+  searchPlaceholder = 'Cari data',
+  getSearchText,
 }: TablePageProps<T>) {
   const [query, setQuery] = useState('')
   const [status, setStatus] = useState('all')
   const filteredData = data.filter((item) => {
-    const matchesQuery = JSON.stringify(item).toLowerCase().includes(query.toLowerCase())
+    const searchableText = getSearchText ? getSearchText(item) : JSON.stringify(item)
+    const matchesQuery = searchableText.toLowerCase().includes(query.toLowerCase())
     const matchesStatus = status === 'all' || getStatus?.(item) === status
     return matchesQuery && matchesStatus
   })
@@ -492,7 +499,7 @@ function TablePage<T extends { id: number }>({
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari data"
+            placeholder={searchPlaceholder}
             className="pl-9"
           />
         </div>
@@ -584,15 +591,19 @@ const ticketCategoryColumns: Column<TicketCategory>[] = [
   { key: 'quota', label: 'Kuota', render: (category) => category.quota },
 ]
 
-const ticketColumns: Column<Ticket>[] = [
-  { key: 'code', label: 'Kode', render: (ticket) => ticket.code },
-  { key: 'orderCode', label: 'Order', render: (ticket) => ticket.orderCode },
-  { key: 'event', label: 'Event', render: (ticket) => ticket.event },
-  { key: 'category', label: 'Kategori', render: (ticket) => ticket.category },
-  { key: 'seatCode', label: 'Kursi', render: (ticket) => ticket.seatCode },
-  { key: 'customer', label: 'Customer', render: (ticket) => ticket.customer },
-  { key: 'status', label: 'Status', render: (ticket) => <StatusBadge value={ticket.status} /> },
-]
+function getTicketColumns(data: AppData, showCustomer: boolean): Column<Ticket>[] {
+  return [
+    { key: 'code', label: 'Kode', render: (ticket) => ticket.code },
+    { key: 'event', label: 'Event', render: (ticket) => ticket.event },
+    { key: 'venue', label: 'Venue', render: (ticket) => getTicketVenue(data, ticket) },
+    { key: 'category', label: 'Kategori', render: (ticket) => ticket.category },
+    { key: 'section', label: 'Section', render: (ticket) => getTicketSeatPart(ticket, 'section') },
+    { key: 'row', label: 'Row', render: (ticket) => getTicketSeatPart(ticket, 'row') },
+    { key: 'number', label: 'No Kursi', render: (ticket) => getTicketSeatPart(ticket, 'number') },
+    ...(showCustomer ? [{ key: 'customer', label: 'Customer', render: (ticket: Ticket) => ticket.customer }] : []),
+    { key: 'status', label: 'Status', render: (ticket) => <StatusBadge value={ticket.status} /> },
+  ]
+}
 
 const orderColumns: Column<Order>[] = [
   { key: 'code', label: 'Kode', render: (order) => order.code },
@@ -757,4 +768,16 @@ function venueHasReservedSeating(venue: Venue) {
   if ('hasReservedSeating' in venue) return venue.hasReservedSeating
   const legacyVenue = venue as Venue & { seatingType?: string }
   return legacyVenue.seatingType !== 'Festival'
+}
+
+function getTicketVenue(data: AppData, ticket: Ticket) {
+  return data.events.find((event) => event.title === ticket.event)?.venue ?? '-'
+}
+
+function getTicketSeatPart(ticket: Ticket, part: 'section' | 'row' | 'number') {
+  if (!ticket.seatCode || ticket.seatCode === '-') return '-'
+  const [section = '-', row = '-', number = '-'] = ticket.seatCode.split('-')
+  if (part === 'section') return section
+  if (part === 'row') return row
+  return number
 }
