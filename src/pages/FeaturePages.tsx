@@ -940,10 +940,20 @@ function getTicketPrice(data: AppData, ticket: Ticket) {
 }
 
 function getDisplayTicketCode(data: AppData, ticket: Ticket) {
-  if (ticket.code.includes('-EVT')) return ticket.code
   const event = data.events.find((item) => item.title === ticket.event)
   const eventPart = `EVT${String(event?.id ?? ticket.id).padStart(3, '0')}`
-  const categoryPart = ticket.category.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'GEN'
-  const ticketPart = String(ticket.id).padStart(3, '0')
-  return `TKT-${eventPart}-${categoryPart}-${ticketPart}`
+  const [section, , number] = getTicketSeatParts(ticket)
+  const sectionPart = section !== '-' ? section : 'NOSEAT'
+  const numberPart = number !== '-' ? number : String(ticket.id).padStart(3, '0')
+  return `TKT-${eventPart}-${sanitizeTicketCodePart(sectionPart)}-${sanitizeTicketCodePart(numberPart)}`
+}
+
+function getTicketSeatParts(ticket: Ticket) {
+  if (!ticket.seatCode || ticket.seatCode === '-') return ['-', '-', '-']
+  const [section = '-', row = '-', number = '-'] = ticket.seatCode.split('-')
+  return [section, row, number]
+}
+
+function sanitizeTicketCodePart(value: string) {
+  return value.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'NA'
 }

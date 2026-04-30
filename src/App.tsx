@@ -303,7 +303,7 @@ function App() {
         ...currentData.tickets,
         ...Array.from({ length: quantity }, (_, index) => ({
           id: orderId + index,
-          code: createTicketCode(orderId + index, checkoutEvent.id, checkoutCategory),
+          code: createTicketCode(orderId + index, checkoutEvent.id, checkoutSeats[index] ?? '-'),
           orderCode,
           category: checkoutCategory,
           seatCode: checkoutSeats[index] ?? '-',
@@ -494,9 +494,13 @@ function App() {
 
 export default App
 
-function createTicketCode(ticketId: number, eventId: number, category: string) {
+function createTicketCode(ticketId: number, eventId: number, seatCode: string) {
   const eventPart = `EVT${String(eventId).padStart(3, '0')}`
-  const categoryPart = category.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'GEN'
-  const ticketPart = String(ticketId).slice(-3).padStart(3, '0')
-  return `TKT-${eventPart}-${categoryPart}-${ticketPart}`
+  const [section = 'NOSEAT', , number = String(ticketId).slice(-3).padStart(3, '0')] =
+    seatCode && seatCode !== '-' ? seatCode.split('-') : []
+  return `TKT-${eventPart}-${sanitizeTicketCodePart(section)}-${sanitizeTicketCodePart(number)}`
+}
+
+function sanitizeTicketCodePart(value: string) {
+  return value.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'NA'
 }

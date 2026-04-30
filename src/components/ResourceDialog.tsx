@@ -267,7 +267,13 @@ function TicketFields({
 
     return (
       <>
-        <FieldInput label="Kode Tiket" value={state.draft.code} field="code" onChange={onDraftChange} readOnly />
+        <FieldInput
+          label="Kode Tiket"
+          value={currentTicket ? getDisplayTicketCode(data, currentTicket) : state.draft.code}
+          field="code"
+          onChange={onDraftChange}
+          readOnly
+        />
         <FieldSelect
           label="Status"
           value={state.draft.status}
@@ -484,6 +490,18 @@ function formatSeatLabel(code: string) {
 
 function getUsedCategoryCount(data: AppData, eventName: string, categoryName: string) {
   return data.tickets.filter((ticket) => ticket.event === eventName && ticket.category === categoryName).length
+}
+
+function getDisplayTicketCode(data: AppData, ticket: AppData['tickets'][number]) {
+  const event = data.events.find((item) => item.title === ticket.event)
+  const eventPart = `EVT${String(event?.id ?? ticket.id).padStart(3, '0')}`
+  const [section = 'NOSEAT', , number = String(ticket.id).padStart(3, '0')] =
+    ticket.seatCode && ticket.seatCode !== '-' ? ticket.seatCode.split('-') : []
+  return `TKT-${eventPart}-${sanitizeTicketCodePart(section)}-${sanitizeTicketCodePart(number)}`
+}
+
+function sanitizeTicketCodePart(value: string) {
+  return value.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'NA'
 }
 
 type TicketCategoryDraft = {

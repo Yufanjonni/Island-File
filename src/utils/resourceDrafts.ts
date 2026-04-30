@@ -257,8 +257,16 @@ export function applyResourceDraft(state: ResourceDialogState, data: AppData, us
     if (mode === 'update') {
       const oldTicket = data.tickets.find((item) => item.id === id)
       const nextSeatCode = normalizeSeatCode(draft.seatCode)
+      const event = data.events.find((item) => item.title === oldTicket?.event)
       const nextTickets = data.tickets.map((item) =>
-        item.id === id ? { ...item, status: draft.status as Ticket['status'], seatCode: nextSeatCode } : item,
+        item.id === id
+          ? {
+              ...item,
+              code: createTicketCode(item.id, event?.id, nextSeatCode),
+              status: draft.status as Ticket['status'],
+              seatCode: nextSeatCode,
+            }
+          : item,
       )
       const releasedSeats = oldTicket?.seatCode && oldTicket.seatCode !== nextSeatCode
         ? updateSeatStatus(data.seats, oldTicket.seatCode, 'Tersedia')
@@ -272,12 +280,13 @@ export function applyResourceDraft(state: ResourceDialogState, data: AppData, us
     const orderCode = draft.orderCode
     const order = data.orders.find((item) => item.code === orderCode)
     const event = data.events.find((item) => item.title === order?.event)
+    const seatCode = normalizeSeatCode(draft.seatCode)
     const value: Ticket = {
       id: nextId,
-      code: createTicketCode(nextId, event?.id, draft.category),
+      code: createTicketCode(nextId, event?.id, seatCode),
       orderCode,
       category: draft.category,
-      seatCode: normalizeSeatCode(draft.seatCode),
+      seatCode,
       event: order?.event ?? '',
       customer: order?.customer ?? '',
       status: draft.status as Ticket['status'],
@@ -387,9 +396,13 @@ function venueHasReservedSeating(venue: Venue | undefined) {
   return legacyVenue.seatingType !== 'Festival'
 }
 
-function createTicketCode(ticketId: number, eventId: number | undefined, category: string) {
+function createTicketCode(ticketId: number, eventId: number | undefined, seatCode: string) {
   const eventPart = `EVT${String(eventId ?? ticketId).padStart(3, '0')}`
-  const categoryPart = category.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'GEN'
-  const ticketPart = String(ticketId).slice(-3).padStart(3, '0')
-  return `TKT-${eventPart}-${categoryPart}-${ticketPart}`
+  const [section = 'NOSEAT', , number = String(ticketId).slice(-3).padStart(3, '0')] =
+    seatCode && seatCode !== '-' ? seatCode.split('-') : []
+  return `TKT-${eventPart}-${sanitizeTicketCodePart(section)}-${sanitizeTicketCodePart(number)}`
+}
+
+function sanitizeTicketCodePart(value: string) {
+  return value.replace(/[^a-z0-9]/gi, '').toUpperCase() || 'NA'
 }
