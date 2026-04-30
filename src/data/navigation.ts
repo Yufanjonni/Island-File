@@ -13,7 +13,6 @@ const visitorNav: NavItem[] = [
 const guestNav: NavItem[] = [
   { label: 'Cari Event', page: 'events' },
   { label: 'Promosi', page: 'promotions' },
-  { label: 'Venue', page: 'venues' },
   { label: 'Kategori Tiket', page: 'ticketCategories' },
 ]
 

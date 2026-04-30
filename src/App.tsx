@@ -33,7 +33,7 @@ const guestUser: User = {
   password: '',
 }
 
-const publicPages: Page[] = ['events', 'promotions', 'venues', 'ticketCategories']
+const publicPages: Page[] = ['events', 'promotions', 'ticketCategories']
 
 function getProfileForm(user: User): ProfileForm {
   return {
